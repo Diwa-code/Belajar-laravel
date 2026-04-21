@@ -26,7 +26,7 @@
       <td>{{ $item -> harga }}</td>
       <td>{{ $item -> deskripsi_produk }}</td>
       <td>
-        <button type="button" class="btn btn-danger mt-2">Hapus</button>
+        <a href="/produk/{{ $item->id_produk }}/delete" class="btn btn-danger mt-2" onclick="return confirm('Apakah Anda yakin ingin menghapus data?')">Hapus</a>
         <a href="/produk/{{ $item->id_produk }}/edit" class="btn btn-warning ms-4 mt-2">Edit</a>
         <a href="/produk/{{ $item->id_produk }}" class="btn btn-info mb-2 mt-4">Detail</a>
       </td>

@@ -30,4 +30,6 @@ Route::get('/produk/{id_produk}', [productController::class,'detail']);//semua a
 
 Route::get('/produk/{id_produk}/edit', [productController::class,'edit']);//semua alamat yang mengarah ke /produk/{id_produk}/edit akan dihandle oleh route ini dan diarahkan ke controler dengan method edit
 
-Route::put('/produk/{id_produk}', [productController::class,'update']);
+Route::put('/produk/{id_produk}', [productController::class,'update']);//semua alamat yang mengarah ke /produk/{id_produk} akan dihandle oleh route ini dan diarahkan ke controler dengan method update
+
+Route::get('/produk/{id_produk}/delete', [productController::class,'destroy']);//semua alamat yang mengarah ke /produk/{id_produk} akan dihandle oleh route ini dan diarahkan ke controler dengan method destroy

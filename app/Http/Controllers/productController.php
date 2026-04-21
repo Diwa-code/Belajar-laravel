@@ -76,4 +76,10 @@ public function update(Request $request, $id_produk){
     return redirect('/produk')->with('pesan', 'Data berhasil diupdate');
 }
 
+public function destroy($id_produk){
+    $data = produk::findOrFail($id_produk);
+    $data->delete();
+    return redirect('/produk')->with('pesan', 'Data berhasil dihapus');
+}
+
 }
