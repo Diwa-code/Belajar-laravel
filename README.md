@@ -86,3 +86,21 @@ Proses penghapusan data berdasarkan ID produk yang dipilih.
    - **Mencari Data**: Sistem memastikan data ada di database menggunakan `produk::findOrFail($id_produk)`.
    - **Proses Hapus**: Mengeksekusi perintah `$data->delete()`. Laravel akan mengirim perintah `DELETE` ke database.
 5. **Merespon (Redirect)**: Controller mengarahkan user kembali ke halaman utama `/produk` dengan pesan notifikasi "Data berhasil dihapus".
+
+---
+
+## 5. Alur Proses Pencarian Produk (Search)
+
+Fitur pencarian memungkinkan user untuk mencari produk berdasarkan kata kunci yang dimasukkan.
+
+### Alur Kerja Pencarian
+1. **User Input & Request**: User memasukkan kata kunci di *search bar* dan menekan tombol "Cari Produk". Browser melakukan request `GET` ke URL `/produk/search?keyword=nama_barang`.
+2. **Router (`routes/web.php`)**: Router menangkap request tersebut dan mengarahkannya ke `productController` pada method `search`.
+3. **Controller (`search(Request $request)`)**:
+   - **Mencapai Keyword**: Mengambil kata kunci dari `$request->keyword`.
+   - **Query Database**: Melakukan pencarian menggunakan SQL `LIKE` pada kolom `nama_produk` atau `deskripsi_produk`.
+   - **Mengirim Data**: Mengembalikan view `show.blade.php` dengan data hasil pencarian.
+4. **View (`show.blade.php`)**: 
+   - Jika data ditemukan, daftar produk akan diperbarui sesuai hasil pencarian.
+   - Jika data kosong, muncul pesan "Data tidak tersedia" (menggunakan direktif `@forelse`).
+   - Muncul tombol **"Kembali"** untuk mereset pencarian dan kembali ke daftar lengkap semua produk.

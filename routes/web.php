@@ -19,7 +19,6 @@ Route::view('/about', 'pages.about', [
 
 Route::view('/contact', 'pages.contact');//route view ini langsung mengarah atau view ke halaman contact
 
-
 Route::get('/produk',[productController::class,'index']);//semua alamat yang mengarah ke /produk akan dihandle oleh route ini dan diarahkan ke controler dengan method index
 
 Route::get('/produk/create', [productController::class,'create']);//semua alamat yang mengarah ke /produk/create akan dihandle oleh route ini dan diarahkan ke controler dengan method create
@@ -33,3 +32,5 @@ Route::get('/produk/{id_produk}/edit', [productController::class,'edit']);//semu
 Route::put('/produk/{id_produk}', [productController::class,'update']);//semua alamat yang mengarah ke /produk/{id_produk} akan dihandle oleh route ini dan diarahkan ke controler dengan method update
 
 Route::get('/produk/{id_produk}/delete', [productController::class,'destroy']);//semua alamat yang mengarah ke /produk/{id_produk} akan dihandle oleh route ini dan diarahkan ke controler dengan method destroy
+
+Route::get('/produk/search', [productController::class, 'search']);// Route untuk menangani pencarian produk berdasarkan kata kunci

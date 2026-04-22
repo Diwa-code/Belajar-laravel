@@ -8,11 +8,31 @@ use App\Models\produk;
 class productController extends Controller
 {
     public function index(){
+
+        
         //query untuk mengambil semua data yang ada di tabel produk dengan equilent
         $data_produk = produk::get(); 
         // $queryBuilder = DB::table('tb_produk')->get(); 
         // //query builder untuk mengambil semua data yang ada di tabel produk
         return view('pages.produk.show', compact('data_produk'));
+}
+
+/**
+ * Method untuk melakukan pencarian produk berdasarkan keyword
+ * @param Request $request - menangkap input 'keyword' dari URL
+ */
+public function search(Request $request)
+{
+    // Mengambil keyword yang dikirim user
+    $keyword = $request->keyword;
+
+    // Melakukan query ke database dengan kondisi LIKE pada nama_produk atau deskripsi_produk
+    $data_produk = produk::where('nama_produk', 'like', "%" . $keyword . "%")
+        ->orWhere('deskripsi_produk', 'like', "%" . $keyword . "%")
+        ->get();
+
+    // Mengembalikan data hasil pencarian ke halaman show.blade.php
+    return view('pages.produk.show', compact('data_produk'));
 }
 public function create(){
     return view('pages.produk.add');
