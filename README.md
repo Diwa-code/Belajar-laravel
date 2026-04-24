@@ -1,4 +1,4 @@
-# Project Laravel - Kelola Produk
+# Project Laravel - Kelola Produk & Kategori
 
 Aplikasi sederhana untuk mengelola data produk menggunakan Laravel (CRUD - Create, Read, Update, Delete). Dokumen ini menjelaskan alur kerja dari fitur kelola produk dari awal pembentukan proyek.
 
@@ -104,3 +104,21 @@ Fitur pencarian memungkinkan user untuk mencari produk berdasarkan kata kunci ya
    - Jika data ditemukan, daftar produk akan diperbarui sesuai hasil pencarian.
    - Jika data kosong, muncul pesan "Data tidak tersedia" (menggunakan direktif `@forelse`).
    - Muncul tombol **"Kembali"** untuk mereset pencarian dan kembali ke daftar lengkap semua produk.
+
+---
+
+## 6. Kelola Kategori (Resource Controller)
+
+Berbeda dengan produk, fitur **Kategori** diimplementasikan menggunakan **Resource Controller** untuk efisiensi kode.
+
+### Perbedaan Utama:
+- **Route Resource**: Menggunakan `Route::resource('kategori', kategoriController::class)`. Satu baris ini otomatis menyediakan 7 route standar (index, create, store, show, edit, update, destroy).
+- **Custom Search**: Fitur pencarian ditambahkan secara manual di luar resource. Route search diletakkan **di atas** route resource agar tidak bentrok dengan pencarian ID.
+
+### Alur Pencarian Kategori:
+1. **Request**: User mengirim keyword melalui form dengan method `GET`.
+2. **Controller (`search`)**: 
+   - Mengambil keyword.
+   - Menggunakan operator `LIKE` dengan *wildcard* (`%`) pada kolom `nama_kategori` dan `deskripsi`.
+   - Mengembalikan data ke view list kategori.
+3. **View**: Data ditampilkan menggunakan template yang sama dengan halaman utama kategori, memberikan pengalaman user yang konsisten.
