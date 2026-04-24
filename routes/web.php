@@ -34,8 +34,8 @@ Route::put('/produk/{id_produk}', [productController::class, 'update']);//semua 
 
 Route::get('/produk/{id_produk}/delete', [productController::class, 'destroy']);//semua alamat yang mengarah ke /produk/{id_produk} akan dihandle oleh route ini dan diarahkan ke controler dengan method destroy
 
-Route::get('/produk/search', [productController::class, 'search']);// Route untuk menangani pencarian produk berdasarkan kata kunci
-
-Route::resource('kategori', kategoriController::class); //membuat route dengan resource controler
+Route::get('/produk/search', [productController::class, 'search']);// Route untuk menangani pencarian produk berdasarkan kata kunci   
 
 Route::get('/kategori/search', [kategoriController::class, 'search']);// Route untuk menangani pencarian kategori berdasarkan kata kunci
+
+Route::resource('kategori', kategoriController::class); //membuat route dengan resource controlerç
