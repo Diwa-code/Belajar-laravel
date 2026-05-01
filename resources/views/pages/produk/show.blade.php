@@ -29,8 +29,12 @@
     <tr>
       <th scope="col">id</th>
       <th scope="col">Nama Barang</th>
+      <th scope="col">Kode Barang</th>
+      <th scope="col">Stok</th>
       <th scope="col">Harga</th>
       <th scope="col">Deskripsi Barang</th>
+      <th scope="col">Kategori</th>
+
       <th scope="col">Aksi</th>
     </tr>
     </thead>
@@ -40,12 +44,15 @@
     <tr>
       <th scope="row">{{ $loop->iteration }}</th>
       <td>{{ $item -> nama_produk }}</td>
+      <td>{{ $item -> kode_barang }}</td>
+      <td>{{ $item -> stok }}</td>
       <td>{{ $item -> harga }}</td>
       <td>{{ $item -> deskripsi_produk }}</td>
+      <td>{{ $item -> nama_kategori }}</td>
       <td>
         <a href="/produk/{{ $item->id_produk }}/delete" class="btn btn-danger mt-2" onclick="return confirm('Apakah Anda yakin ingin menghapus data?')">Hapus</a>
         <a href="/produk/{{ $item->id_produk }}/edit" class="btn btn-warning ms-4 mt-2">Edit</a>
-        <a href="/produk/{{ $item->id_produk }}" class="btn btn-info mb-2 mt-4">Detail</a>
+        <a href="/produk/{{ $item->id_produk }}" class="btn btn-info mt-2 ms-4">Detail</a>
       </td>
     </tr>
       {{-- Pesan yang muncul jika hasil pencarian atau data produk kosong --}}
