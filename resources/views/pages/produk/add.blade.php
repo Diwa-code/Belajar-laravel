@@ -4,7 +4,7 @@
     <div class="card">
         <div class="card-header">Tambah Data Produk</div>
         <div class="card-body">
-            <form action="/produk" method="POST">
+            <form action="/produk" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="row">
                     <div class="col-sm-6">
@@ -59,6 +59,16 @@
                         @error('deskripsi_produk')
                             <div id="emailHelp" class="form-text text-danger">{{ $message }}</div>
                         @enderror
+                    </div>
+                </div>
+                <div class="col-sm-12" style="margin-top: 15px;">
+                    <div class="mb-3">
+                        <label for="gambar" class="form-label">Gambar Produk</label>
+                        <input type="file" name="gambar" class="form-control" id="gambar" accept="image/*">
+                        @error('gambar')
+                            <div class="form-text text-danger">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Format: jpeg, png, jpg, gif, webp. Maksimal 2MB.</div>
                     </div>
                 </div>
                 <div class="col-sm-8" style="margin-top: 20px;">

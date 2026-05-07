@@ -4,7 +4,7 @@
     <div class="card">
         <div class="card-header">Edit Produk</div>
         <div class="card-body">
-            <form action="/produk/{{ $data->id_produk }}" method="POST">
+            <form action="/produk/{{ $data->id_produk }}" method="POST" enctype="multipart/form-data">
                 @method('PUT')
                 @csrf
                 <div class="row">
@@ -60,6 +60,22 @@
                         @error('deskripsi_produk')
                             <div id="emailHelp" class="form-text text-danger">{{ $message }}</div>
                         @enderror
+                    </div>
+                </div>
+                <div class="col-sm-12" style="margin-top: 15px;">
+                    <div class="mb-3">
+                        <label for="gambar" class="form-label">Gambar Produk</label>
+                        @if($data->gambar)
+                            <div class="mb-2">
+                                <img src="{{ asset('gambar_produk/' . $data->gambar) }}" alt="Gambar saat ini" class="img-thumbnail" style="max-height: 200px;">
+                                <p class="form-text">Gambar saat ini. Pilih file baru di bawah untuk mengganti.</p>
+                            </div>
+                        @endif
+                        <input type="file" name="gambar" class="form-control" id="gambar" accept="image/*">
+                        @error('gambar')
+                            <div class="form-text text-danger">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Format: jpeg, png, jpg, gif, webp. Maksimal 2MB.</div>
                     </div>
                 </div>
                 <div class="col-sm-8" style="margin-top: 20px;">

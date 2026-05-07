@@ -122,3 +122,215 @@ Berbeda dengan produk, fitur **Kategori** diimplementasikan menggunakan **Resour
    - Menggunakan operator `LIKE` dengan *wildcard* (`%`) pada kolom `nama_kategori` dan `deskripsi`.
    - Mengembalikan data ke view list kategori.
 3. **View**: Data ditampilkan menggunakan template yang sama dengan halaman utama kategori, memberikan pengalaman user yang konsisten.
+
+---
+
+## 7. Fitur Upload Gambar Produk
+
+Fitur ini memungkinkan user menambahkan gambar pada produk. Gambar disimpan secara fisik ke folder `public/gambar_produk/`, sementara nama file-nya dicatat di database pada kolom `gambar` di tabel `tb_produk`. Untuk menghindari kesamaan nama file, setiap gambar yang di-upload akan diberi nama acak menggunakan `Str::random()` dengan ekstensi asli file dipertahankan.
+
+### 7.1 Persiapan Awal (Fondasi)
+
+Sebelum fitur ini bisa berjalan, ada beberapa hal yang perlu disiapkan terlebih dahulu:
+
+1. **Migration (Kolom `gambar` di tabel `tb_produk`)**
+   - Di dalam file migration `create_produks_table.php`, kolom `gambar` sudah ditambahkan sebagai `string` dan bersifat `nullable` (boleh kosong). Artinya, produk tetap bisa dibuat tanpa harus menyertakan gambar.
+   - Kode migration-nya:
+     ```php
+     $table->string('gambar')->nullable();
+     ```
+
+2. **Model (`app/Models/produk.php`)**
+   - Kolom `gambar` harus didaftarkan di dalam property `$fillable` agar Laravel mengizinkan data gambar diisi melalui *Mass Assignment* (metode `create()` dan `update()`).
+   - Kode model:
+     ```php
+     protected $fillable = ['nama_produk','harga','deskripsi_produk','stok','kode_barang','kategori_id','gambar'];
+     ```
+
+3. **Folder Penyimpanan (`public/gambar_produk/`)**
+   - Folder ini dibuat secara manual di dalam direktori `public/`. Semua file gambar yang di-upload akan disimpan di sini. Folder ini bisa diakses langsung oleh browser melalui URL karena berada di dalam `public/`.
+
+4. **Import Tambahan di Controller**
+   - `Illuminate\Support\Str` — untuk menghasilkan string acak sebagai nama file.
+   - `Illuminate\Support\Facades\File` — untuk operasi file seperti mengecek keberadaan dan menghapus file lama.
+
+---
+
+### 7.2 Alur Upload Gambar Saat Tambah Produk (Store)
+
+Alur ini terjadi ketika user menambahkan produk baru beserta gambarnya.
+
+#### Tahap A: Menampilkan Form Tambah Produk
+1. **View (`add.blade.php`)**: Form sudah dilengkapi dengan:
+   - Atribut `enctype="multipart/form-data"` pada tag `<form>`. **Ini wajib** agar form bisa mengirim data file (bukan hanya teks biasa).
+   - Input file bertipe `<input type="file" name="gambar">` dengan atribut `accept="image/*"` agar dialog pilih file hanya menampilkan gambar.
+   - Pesan bantuan di bawah input: *"Format: jpeg, png, jpg, gif, webp. Maksimal 2MB."*
+
+#### Tahap B: Proses Penyimpanan (Submit Form)
+1. **User Submit**: User mengisi semua field termasuk memilih file gambar, lalu menekan tombol "Submit".
+2. **Router**: Request `POST` ke `/produk` ditangkap dan diarahkan ke method `store`.
+3. **Controller (`store(Request $request)`)** — proses berjalan secara berurutan:
+
+   **Langkah 1 — Validasi:**
+   ```php
+   'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+   ```
+   - `nullable`: Gambar boleh tidak diisi (opsional).
+   - `image`: File harus berupa gambar.
+   - `mimes:jpeg,png,jpg,gif,webp`: Hanya format ini yang diterima.
+   - `max:2048`: Ukuran maksimal 2MB (2048 KB).
+   - Jika validasi gagal, Laravel otomatis kembali ke form dengan pesan error.
+
+   **Langkah 2 — Pengecekan File:**
+   ```php
+   $namaGambar = null;
+   if ($request->hasFile('gambar')) {
+   ```
+   - Variabel `$namaGambar` diinisialisasi `null` (artinya tanpa gambar).
+   - `$request->hasFile('gambar')` mengecek apakah user benar-benar mengunggah file.
+
+   **Langkah 3 — Generate Nama Acak:**
+   ```php
+   $ekstensi = $request->file('gambar')->getClientOriginalExtension();
+   $namaGambar = Str::random(30) . '.' . $ekstensi;
+   ```
+   - `getClientOriginalExtension()` mengambil ekstensi asli file yang di-upload (misal: `jpg`, `png`).
+   - `Str::random(30)` menghasilkan 30 karakter acak (huruf dan angka) sebagai nama file baru.
+   - Hasil akhir contoh: `aB3xK9mNpQ2rS5tU8vW0yZ1cE4fG7.jpg`.
+   - Tujuannya: **mencegah konflik nama file** jika dua user meng-upload gambar dengan nama yang sama.
+
+   **Langkah 4 — Simpan File ke Folder:**
+   ```php
+   $request->file('gambar')->move(public_path('gambar_produk'), $namaGambar);
+   ```
+   - `public_path('gambar_produk')` menghasilkan path absolut ke folder `public/gambar_produk/`.
+   - Method `move()` memindahkan file dari lokasi sementara (temporary) ke folder tujuan dengan nama baru.
+
+   **Langkah 5 — Simpan ke Database:**
+   ```php
+   produk::create([
+       ...
+       'gambar' => $namaGambar,
+   ]);
+   ```
+   - Nama file gambar (bukan file-nya sendiri) disimpan ke kolom `gambar` di database.
+   - Jika user tidak upload gambar, kolom ini berisi `null`.
+
+4. **Redirect**: User diarahkan kembali ke halaman daftar produk dengan pesan sukses.
+
+---
+
+### 7.3 Alur Menampilkan Gambar di Detail Produk
+
+Gambar produk hanya ditampilkan di halaman **detail produk**, bukan di halaman daftar.
+
+1. **User Request**: User menekan tombol "Detail" pada salah satu produk. Browser mengirim request `GET` ke `/produk/{id_produk}`.
+2. **Controller (`detail($id_produk)`)**: Mengambil data produk beserta kategorinya menggunakan `join` tabel:
+   ```php
+   $data_produk = produk::join('tb_kategori', 'tb_produk.kategori_id', '=', 'tb_kategori.id_kategori')
+       ->where('id_produk', $id_produk)
+       ->firstOrFail();
+   ```
+3. **View (`detail.blade.php`)**: Tampilan mengecek apakah kolom `gambar` berisi data atau `null`:
+
+   **Jika ada gambar:**
+   ```blade
+   @if($data_produk->gambar)
+       <img src="{{ asset('gambar_produk/' . $data_produk->gambar) }}" ...>
+   ```
+   - `asset('gambar_produk/namafile.jpg')` menghasilkan URL lengkap yang bisa diakses browser, contoh: `http://localhost:8000/gambar_produk/aB3xK9mNpQ2rS5tU8vW0yZ1cE4fG7.jpg`.
+
+   **Jika belum ada gambar:**
+   ```blade
+   @else
+       <p>Belum ada gambar</p>
+       <a href="/produk/{{ $data_produk->id_produk }}/edit">Tambahkan Gambar Sekarang</a>
+   @endif
+   ```
+   - Menampilkan ikon placeholder, pesan *"Belum ada gambar"*, dan tombol yang langsung mengarahkan user ke halaman edit untuk menambahkan gambar.
+
+---
+
+### 7.4 Alur Ganti Gambar Saat Edit Produk (Update)
+
+Saat mengedit produk, user memiliki opsi untuk mengganti gambar yang sudah ada dengan gambar baru.
+
+#### Tahap A: Menampilkan Form Edit dengan Preview Gambar
+1. **View (`edit.blade.php`)**: Form edit sudah dilengkapi:
+   - Atribut `enctype="multipart/form-data"` pada `<form>`.
+   - **Preview gambar saat ini**: Jika produk sudah memiliki gambar, gambar tersebut ditampilkan di atas input file sebagai referensi visual bagi user.
+     ```blade
+     @if($data->gambar)
+         <img src="{{ asset('gambar_produk/' . $data->gambar) }}" alt="Gambar saat ini">
+         <p>Gambar saat ini. Pilih file baru di bawah untuk mengganti.</p>
+     @endif
+     ```
+   - Input file untuk memilih gambar baru (opsional — jika tidak memilih file baru, gambar lama tetap dipertahankan).
+
+#### Tahap B: Proses Update (Submit Edit)
+1. **User Submit**: User mengubah data dan/atau memilih gambar baru, lalu menekan "Submit".
+2. **Router**: Request `PUT` ke `/produk/{id_produk}` ditangkap dan diarahkan ke method `update`.
+3. **Controller (`update(Request $request, $id_produk)`)** — proses berjalan berurutan:
+
+   **Langkah 1 — Validasi:** Sama seperti saat store, validasi `gambar` bersifat `nullable`.
+
+   **Langkah 2 — Siapkan Data Update (Tanpa Gambar Dulu):**
+   ```php
+   $dataUpdate = [
+       'nama_produk' => $request->nama_produk_,
+       'harga' => $request->harga_produk,
+       ...
+   ];
+   ```
+   - Data update disiapkan dalam array terlebih dahulu **tanpa** kolom `gambar`. Ini agar jika user tidak mengganti gambar, kolom gambar di database tidak ikut berubah (tetap mempertahankan gambar lama).
+
+   **Langkah 3 — Cek Apakah Ada Gambar Baru:**
+   ```php
+   if ($request->hasFile('gambar')) {
+   ```
+   - Jika user **tidak** memilih file baru, blok ini dilewati dan gambar lama tetap utuh.
+   - Jika user **memilih** file baru, proses berlanjut ke langkah berikutnya.
+
+   **Langkah 4 — Hapus Gambar Lama dari Folder:**
+   ```php
+   $produkLama = produk::findOrFail($id_produk);
+   if ($produkLama->gambar && File::exists(public_path('gambar_produk/' . $produkLama->gambar))) {
+       File::delete(public_path('gambar_produk/' . $produkLama->gambar));
+   }
+   ```
+   - Mengambil data produk lama dari database untuk mendapatkan nama file gambar lama.
+   - `File::exists(...)` mengecek apakah file tersebut benar-benar ada di folder (menghindari error jika file sudah terhapus manual).
+   - `File::delete(...)` menghapus file gambar lama dari folder `public/gambar_produk/`. **Tujuannya agar folder tidak menumpuk file-file lama yang sudah tidak terpakai.**
+
+   **Langkah 5 — Simpan Gambar Baru:**
+   ```php
+   $ekstensi = $request->file('gambar')->getClientOriginalExtension();
+   $namaGambar = Str::random(30) . '.' . $ekstensi;
+   $request->file('gambar')->move(public_path('gambar_produk'), $namaGambar);
+   $dataUpdate['gambar'] = $namaGambar;
+   ```
+   - Proses sama seperti saat store: generate nama acak, simpan file ke folder.
+   - Nama file baru ditambahkan ke array `$dataUpdate` agar ikut di-update ke database.
+
+   **Langkah 6 — Update Database:**
+   ```php
+   produk::where('id_produk', $id_produk)->update($dataUpdate);
+   ```
+   - Jika ada gambar baru, `$dataUpdate` berisi kolom `gambar` → database di-update.
+   - Jika tidak ada gambar baru, `$dataUpdate` **tidak** berisi kolom `gambar` → nilai lama di database tetap utuh.
+
+4. **Redirect**: User diarahkan kembali ke halaman daftar produk dengan pesan sukses.
+
+---
+
+### 7.5 Ringkasan File yang Terlibat
+
+| File | Peran |
+|------|-------|
+| `database/migrations/create_produks_table.php` | Mendefinisikan kolom `gambar` (nullable) di tabel `tb_produk` |
+| `app/Models/produk.php` | Mendaftarkan `gambar` di `$fillable` agar bisa diisi via Mass Assignment |
+| `app/Http/Controllers/productController.php` | Logika upload, validasi, rename acak, simpan file, dan hapus file lama |
+| `resources/views/pages/produk/add.blade.php` | Form tambah produk + input file gambar |
+| `resources/views/pages/produk/edit.blade.php` | Form edit produk + preview gambar lama + input file pengganti |
+| `resources/views/pages/produk/detail.blade.php` | Menampilkan gambar atau pesan "belum ada gambar" |
+| `public/gambar_produk/` | Folder penyimpanan fisik file gambar yang di-upload |

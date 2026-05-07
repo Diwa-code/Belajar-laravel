@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\produk;
 use App\Models\Kategori;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 
 class productController extends Controller
 {
@@ -52,13 +53,25 @@ public function store(Request $request){ //parameter untuk menampung data yang d
         'deskripsi_produk' => 'required',
         'stok' => 'required',
         'kategori'=> 'required',
+        'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
     ],[
         'harga.numeric' => 'Harga harus berupa angka',
         'harga.required'=> 'Harga harus diisi',
         'nama_produk_.required' => 'Nama Produk harus diisi',
         'deskripsi_produk.required' => 'Deskripsi Produk harus diisi',
         'stok.required'=> 'stok harus di isi',
+        'gambar.image' => 'File harus berupa gambar',
+        'gambar.mimes' => 'Format gambar harus jpeg, png, jpg, gif, atau webp',
+        'gambar.max' => 'Ukuran gambar maksimal 2MB',
     ]);
+
+    // Handle upload gambar
+    $namaGambar = null;
+    if ($request->hasFile('gambar')) {
+        $ekstensi = $request->file('gambar')->getClientOriginalExtension();
+        $namaGambar = Str::random(30) . '.' . $ekstensi;
+        $request->file('gambar')->move(public_path('gambar_produk'), $namaGambar);
+    }
 
     //query untuk mengambil data yang di isi dari show.blade dengna menggunakan name dari kolom pada tampilan add, name="nama_produk_"
     produk::create([
@@ -68,7 +81,7 @@ public function store(Request $request){ //parameter untuk menampung data yang d
         'stok' => $request->stok,
         'kategori_id' => $request->kategori,
         'deskripsi_produk' => $request->deskripsi_produk,
-
+        'gambar' => $namaGambar,
     ]);
 
     //untuk menampilkan kembali ke halaman produk setalah data ditambah
@@ -76,7 +89,9 @@ public function store(Request $request){ //parameter untuk menampung data yang d
 }
 
 public function detail($id_produk){
-    $data_produk = produk::findOrFail($id_produk);
+    $data_produk = produk::join('tb_kategori', 'tb_produk.kategori_id', '=', 'tb_kategori.id_kategori')
+        ->where('id_produk', $id_produk)
+        ->firstOrFail();
     return view('pages.produk.detail', compact('data_produk'));
 }
 
@@ -92,7 +107,8 @@ public function update(Request $request, $id_produk){
             'harga_produk' => 'required|numeric',
             'stok' => 'required|numeric',
             'kategori' => 'required',
-            'deskripsi_produk' => 'required'
+            'deskripsi_produk' => 'required',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ],[
             'nama_produk_.required' => 'Nama Produk harus diisi',
             'harga_produk.required' => 'Harga harus diisi',
@@ -101,14 +117,35 @@ public function update(Request $request, $id_produk){
             'stok.numeric' => 'Stok harus berupa angka',
             'kategori.required' => 'Kategori harus dipilih',
             'deskripsi_produk.required' => 'Deskripsi Produk harus diisi',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar harus jpeg, png, jpg, gif, atau webp',
+            'gambar.max' => 'Ukuran gambar maksimal 2MB',
         ]);
-    produk::where('id_produk', $id_produk)->update([
+
+    $dataUpdate = [
         'nama_produk' => $request->nama_produk_,
         'harga' => $request->harga_produk,
         'stok'=> $request->stok,
         'kategori_id'=> $request->kategori,
         'deskripsi_produk' => $request->deskripsi_produk,
-    ]);
+    ];
+
+    // Handle upload gambar baru (jika ada)
+    if ($request->hasFile('gambar')) {
+        // Hapus gambar lama jika ada
+        $produkLama = produk::findOrFail($id_produk);
+        if ($produkLama->gambar && File::exists(public_path('gambar_produk/' . $produkLama->gambar))) {
+            File::delete(public_path('gambar_produk/' . $produkLama->gambar));
+        }
+
+        // Simpan gambar baru dengan nama acak
+        $ekstensi = $request->file('gambar')->getClientOriginalExtension();
+        $namaGambar = Str::random(30) . '.' . $ekstensi;
+        $request->file('gambar')->move(public_path('gambar_produk'), $namaGambar);
+        $dataUpdate['gambar'] = $namaGambar;
+    }
+
+    produk::where('id_produk', $id_produk)->update($dataUpdate);
 
     return redirect('/produk')->with('pesan', 'Data berhasil diupdate');
 }
